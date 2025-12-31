@@ -1,0 +1,9 @@
+{
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Bash(python3:*)"
+    ]
+  }
+}
