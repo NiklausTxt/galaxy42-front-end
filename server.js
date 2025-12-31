@@ -5,7 +5,7 @@ const path = require('path');
 
 // 代理服务器配置
 const PROXY_CONFIG = {
-    PORT: 8080,
+    PORT: process.env.PORT || 3000,  // 改为3000端口，避免与后端冲突
     API_TARGET: 'http://47.97.38.226',
     API_KEY: 'sk-61795bb85ffc4d4c9c3025d2bd0df8f9'
 };
