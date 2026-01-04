@@ -25,8 +25,12 @@ const MIME_TYPES = {
 
 // 创建代理服务器
 const server = http.createServer((req, res) => {
+    // 调试日志：打印所有到达后端的请求
+    console.log(`[Server] 收到请求: ${req.method} ${req.url}`);
+
     // 处理API请求代理
     if (req.url === '/api/chat' && req.method === 'POST') {
+        console.log('[Server] 正在处理 /api/chat 请求...');
         let body = '';
 
         req.on('data', chunk => {
@@ -34,6 +38,7 @@ const server = http.createServer((req, res) => {
         });
 
         req.on('end', () => {
+            console.log(`[Server] 请求体接收完毕，长度: ${body.length}`);
             try {
                 const options = {
                     hostname: '47.97.38.226',
@@ -45,8 +50,12 @@ const server = http.createServer((req, res) => {
                         'Content-Type': 'application/json'
                     }
                 };
+                
+                console.log(`[Server] 正在转发至上游，使用 Key: ${PROXY_CONFIG.API_KEY.slice(0, 8)}...`);
 
                 const proxyReq = http.request(options, (proxyRes) => {
+                    console.log(`[Server] 上游响应状态码: ${proxyRes.statusCode}`);
+                    
                     // 设置CORS头
                     res.setHeader('Access-Control-Allow-Origin', '*');
                     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -86,22 +95,22 @@ const server = http.createServer((req, res) => {
     }
 
     // 处理静态文件
-    let filePath = '.' + req.url;
-    if (filePath === './') {
-        filePath = './index.html';
-    }
-
+    // 默认从 dist 目录提供文件 (生产环境构建结果)
+    let filePath = path.join('./dist', req.url === '/' ? 'index.html' : req.url);
+    
     const extname = String(path.extname(filePath)).toLowerCase();
     const contentType = MIME_TYPES[extname] || 'application/octet-stream';
 
     fs.readFile(filePath, (error, content) => {
         if (error) {
             if (error.code === 'ENOENT') {
+                // 如果是 SPA，通常对所有找不到的路由返回 index.html
+                // 但这里我们先简单处理 404
                 res.writeHead(404, { 'Content-Type': 'text/html' });
-                res.end('<h1>404 - 文件未找到</h1>', 'utf-8');
+                res.end('<h1>404 - File Not Found</h1><p>Ensure you have run <code>npm run build</code> to generate the dist directory.</p>', 'utf-8');
             } else {
                 res.writeHead(500);
-                res.end(`服务器错误: ${error.code}`, 'utf-8');
+                res.end(`Server Error: ${error.code}`, 'utf-8');
             }
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
